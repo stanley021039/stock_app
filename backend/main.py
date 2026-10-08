@@ -101,6 +101,14 @@ class TrackedSymbolIn(BaseModel):
     symbol: str
 
 
+class TrackedOrderIn(BaseModel):
+    symbols: list[str]
+
+
+class PipHiddenIn(BaseModel):
+    hidden: bool
+
+
 class LiteOverrideIn(BaseModel):
     level: int  # 0/1/2
     side: int   # -1/0/+1, matches diff's sign convention; 0 only valid at level 0
@@ -281,9 +289,12 @@ def get_tracked_symbols():
     whenever the market's open, so every reader in the app shows the live
     price automatically instead of just the last EOD close."""
     out = []
+    hidden = db.pip_hidden_symbols()
     for sym in db.list_tracked_symbols():
         info = db.get_symbol(sym) or {"symbol": sym, "name": sym, "market": None, "type": None}
-        out.append(_with_quote(info))
+        info = _with_quote(info)
+        info["pip_hidden"] = sym in hidden
+        out.append(info)
     return out
 
 
@@ -295,6 +306,22 @@ def add_tracked_symbol(body: TrackedSymbolIn):
     if not db.get_symbol(symbol):
         raise HTTPException(404, f"unknown symbol {symbol}（請先透過「新增股票」加入股票清單）")
     db.add_tracked_symbol(symbol)
+    return get_tracked_symbols()
+
+
+@app.put("/api/tracked-symbols/order")
+def set_tracked_order(body: TrackedOrderIn):
+    db.set_tracked_order(body.symbols)
+    return get_tracked_symbols()
+
+
+@app.put("/api/tracked-symbols/{symbol}/pip-hidden")
+def set_tracked_pip_hidden(symbol: str, body: PipHiddenIn):
+    """Hide/show a tracked symbol in the PiP mini window only -- it stays
+    tracked (still live-polled) and still listed on every web page."""
+    if not db.is_tracked(symbol):
+        raise HTTPException(404, f"{symbol} is not tracked")
+    db.set_tracked_pip_hidden(symbol, body.hidden)
     return get_tracked_symbols()
 
 

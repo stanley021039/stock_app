@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '../api.js'
 import { TriggerList } from './LiteTriggers.jsx'
+import { useDragReorder } from '../lib/useDragReorder.js'
 
 const POLL_MS = 15000
 
@@ -47,6 +48,20 @@ export default function PipLauncher() {
   // Close it if the whole app unmounts (e.g. HMR), so it isn't orphaned.
   useEffect(() => () => pipWindow?.close(), [pipWindow])
 
+  // The PiP only lists non-hidden symbols, so a drag there reorders just
+  // those -- slot them back into the full list in place, leaving each
+  // hidden symbol where it was instead of shoving it to the end.
+  async function reorderTracked(nextVisible) {
+    const queue = [...nextVisible]
+    const next = trackedRows.map((r) => (r.pip_hidden ? r : queue.shift()))
+    setTrackedRows(next) // optimistic
+    try {
+      setTrackedRows(await api.setTrackedOrder(next.map((r) => r.symbol)))
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
   async function open() {
     try {
       const w = await window.documentPictureInPicture.requestWindow({ width: 300, height: 420 })
@@ -91,6 +106,7 @@ export default function PipLauncher() {
           tab={tab}
           onTab={setTab}
           trackedRows={trackedRows}
+          onReorder={reorderTracked}
           live={live}
           lastPollAt={lastPollAt}
           error={error}
@@ -101,7 +117,7 @@ export default function PipLauncher() {
   )
 }
 
-function PipPanel({ tab, onTab, trackedRows, live, lastPollAt, error }) {
+function PipPanel({ tab, onTab, trackedRows, onReorder, live, lastPollAt, error }) {
   const liveResults = live?.results ?? []
   const triggerCount = liveResults.filter((r) => r.entered_today || r.reset_today).length
   const tabStyle = (active) => ({
@@ -127,7 +143,7 @@ function PipPanel({ tab, onTab, trackedRows, live, lastPollAt, error }) {
         </button>
       </div>
 
-      {tab === 'quotes' ? <TrackedQuoteList rows={trackedRows} /> : <TriggerList liveResults={liveResults} />}
+      {tab === 'quotes' ? <TrackedQuoteList rows={trackedRows.filter((r) => !r.pip_hidden)} onReorder={onReorder} /> : <TriggerList liveResults={liveResults} />}
 
       <div style={{ color: 'var(--muted)', fontSize: 11, marginTop: 10 }}>
         {status}
@@ -144,7 +160,8 @@ const shortName = (name) => {
   return /[一-鿿]/.test(head) ? head : name
 }
 
-function TrackedQuoteList({ rows }) {
+function TrackedQuoteList({ rows, onReorder }) {
+  const reorder = useDragReorder(rows, (r) => r.symbol, onReorder)
   if (rows.length === 0) return <div style={{ color: 'var(--muted)', fontSize: 13 }}>沒有追蹤中的股票</div>
   return (
     <table style={{ width: '100%', fontSize: 13 }}>
@@ -152,7 +169,8 @@ function TrackedQuoteList({ rows }) {
         {rows.map((r) => {
           const pct = r.quote?.change_pct
           return (
-            <tr key={r.symbol}>
+            <tr key={r.symbol} {...reorder.rowProps(r)}>
+              <td {...reorder.handleProps(r)} style={{ ...reorder.handleProps(r).style, padding: '3px 2px' }}>⋮⋮</td>
               <td style={{ padding: '3px 4px' }}>{shortName(r.name)}</td>
               <td style={{ padding: '3px 4px', textAlign: 'right' }}>{fmtPrice(r.quote?.price)}</td>
               <td style={{ padding: '3px 4px', textAlign: 'right', width: 64 }} className={changeCls(pct)}>

@@ -83,4 +83,7 @@ export const api = {
   getTrackedSymbols: () => req('/tracked-symbols'),
   addTrackedSymbol: (symbol) => req('/tracked-symbols', { method: 'POST', body: JSON.stringify({ symbol }) }),
   removeTrackedSymbol: (symbol) => req(`/tracked-symbols/${enc(symbol)}`, { method: 'DELETE' }),
+  setTrackedPipHidden: (symbol, hidden) =>
+    req(`/tracked-symbols/${enc(symbol)}/pip-hidden`, { method: 'PUT', body: JSON.stringify({ hidden }) }),
+  setTrackedOrder: (symbols) => req('/tracked-symbols/order', { method: 'PUT', body: JSON.stringify({ symbols }) }),
 }

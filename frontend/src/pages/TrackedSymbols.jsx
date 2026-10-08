@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api.js'
 import Quote from '../components/Quote.jsx'
+import { useDragReorder } from '../lib/useDragReorder.js'
 
 // Manage the global live-quote watchlist (backend/quote_tracker.py). Any
 // symbol added here gets its TODAY price kept continuously fresh off
@@ -44,11 +45,33 @@ export default function TrackedSymbols() {
 
   const trackedSet = useMemo(() => new Set(tracked.map((s) => s.symbol)), [tracked])
 
+  const reorder = useDragReorder(tracked, (s) => s.symbol, async (next) => {
+    setTracked(next) // optimistic -- the row lands immediately
+    try {
+      setTracked(await api.setTrackedOrder(next.map((s) => s.symbol)))
+    } catch (e) {
+      setError(e.message)
+      refresh()
+    }
+  })
+
   async function handleAdd(symbol) {
     setBusySymbol(symbol)
     setError(null)
     try {
       setTracked(await api.addTrackedSymbol(symbol))
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setBusySymbol(null)
+    }
+  }
+
+  async function handleTogglePipHidden(s) {
+    setBusySymbol(s.symbol)
+    setError(null)
+    try {
+      setTracked(await api.setTrackedPipHidden(s.symbol, !s.pip_hidden))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -128,22 +151,36 @@ export default function TrackedSymbols() {
         <table>
           <thead>
             <tr>
+              <th></th>
               <th>代號</th>
               <th>名稱</th>
               <th style={{ textAlign: 'right' }}>最新價</th>
               <th style={{ textAlign: 'right' }}>漲跌</th>
+              <th style={{ textAlign: 'center' }} title="只影響子母視窗，網頁仍會顯示">子母視窗</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {tracked.map((s) => (
-              <tr key={s.symbol} style={{ cursor: 'default' }}>
+              <tr key={s.symbol} {...reorder.rowProps(s)} style={{ cursor: 'default', ...reorder.rowProps(s).style }}>
+                <td {...reorder.handleProps(s)}>⋮⋮</td>
                 <td style={{ fontWeight: 600 }}>{s.symbol}</td>
                 <td style={{ color: '#ffd60a' }}>{s.name}</td>
                 <td style={{ textAlign: 'right' }}>
                   {s.quote?.price != null ? s.quote.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}
                 </td>
                 <td style={{ textAlign: 'right' }}><Quote quote={s.quote} inline /></td>
+                <td style={{ textAlign: 'center' }}>
+                  <button
+                    onClick={() => handleTogglePipHidden(s)}
+                    disabled={busySymbol === s.symbol}
+                    title={s.pip_hidden ? '目前不在子母視窗顯示，按一下恢復' : '按一下在子母視窗隱藏（網頁仍顯示）'}
+                    aria-label={s.pip_hidden ? '在子母視窗顯示' : '在子母視窗隱藏'}
+                    style={{ padding: '3px 8px', lineHeight: 0, ...(s.pip_hidden ? { color: 'var(--muted)', opacity: 0.6 } : {}) }}
+                  >
+                    {s.pip_hidden ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </td>
                 <td>
                   <button onClick={() => handleRemove(s.symbol)} disabled={busySymbol === s.symbol} style={{ padding: '2px 8px' }}>
                     移除
@@ -155,5 +192,28 @@ export default function TrackedSymbols() {
         </table>
       )}
     </div>
+  )
+}
+
+const iconProps = {
+  width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+  strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
+}
+
+function EyeIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function EyeOffIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
   )
 }

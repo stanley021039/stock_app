@@ -182,6 +182,21 @@ def init_schema():
         if "quote_time" not in price_cols:
             conn.execute("ALTER TABLE prices ADD COLUMN quote_time TEXT")
 
+        # User-chosen display order for the watchlist (drag-to-reorder on the
+        # 報價追蹤 tab / PiP window). Existing rows keep their old
+        # added_at order, seeded once here.
+        tracked_cols = [r[1] for r in conn.execute("PRAGMA table_info(tracked_symbols)").fetchall()]
+        if "sort_order" not in tracked_cols:
+            conn.execute("ALTER TABLE tracked_symbols ADD COLUMN sort_order INTEGER")
+            for i, r in enumerate(conn.execute(
+                "SELECT symbol FROM tracked_symbols ORDER BY added_at"
+            ).fetchall()):
+                conn.execute("UPDATE tracked_symbols SET sort_order = ? WHERE symbol = ?", (i, r[0]))
+        # Per-symbol "don't show this one in the PiP mini window" flag --
+        # display-only, the symbol stays tracked and on every web page.
+        if "pip_hidden" not in tracked_cols:
+            conn.execute("ALTER TABLE tracked_symbols ADD COLUMN pip_hidden INTEGER NOT NULL DEFAULT 0")
+
 
 # --- symbols ---------------------------------------------------------------
 
@@ -602,7 +617,7 @@ def set_trade_entry_included(log_id, entry_id, included):
 def list_tracked_symbols():
     with get_conn() as conn:
         return [r["symbol"] for r in conn.execute(
-            "SELECT symbol FROM tracked_symbols ORDER BY added_at"
+            "SELECT symbol FROM tracked_symbols ORDER BY sort_order IS NULL, sort_order, added_at"
         ).fetchall()]
 
 
@@ -617,7 +632,38 @@ def is_tracked(symbol):
 def add_tracked_symbol(symbol):
     with get_conn() as conn:
         conn.execute(
-            "INSERT OR IGNORE INTO tracked_symbols (symbol) VALUES (?)", (symbol,)
+            "INSERT OR IGNORE INTO tracked_symbols (symbol, sort_order) "
+            "VALUES (?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tracked_symbols))",
+            (symbol,),
+        )
+
+
+def set_tracked_order(symbols):
+    """Persist a new display order. Symbols not listed (e.g. one added in
+    another tab meanwhile) keep their relative order after the listed ones."""
+    with get_conn() as conn:
+        current = [r[0] for r in conn.execute(
+            "SELECT symbol FROM tracked_symbols ORDER BY sort_order IS NULL, sort_order, added_at"
+        ).fetchall()]
+        listed = [s for s in symbols if s in current]
+        ordered = listed + [s for s in current if s not in listed]
+        conn.executemany(
+            "UPDATE tracked_symbols SET sort_order = ? WHERE symbol = ?",
+            [(i, s) for i, s in enumerate(ordered)],
+        )
+
+
+def pip_hidden_symbols():
+    with get_conn() as conn:
+        return {r[0] for r in conn.execute(
+            "SELECT symbol FROM tracked_symbols WHERE pip_hidden = 1"
+        ).fetchall()}
+
+
+def set_tracked_pip_hidden(symbol, hidden):
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE tracked_symbols SET pip_hidden = ? WHERE symbol = ?", (1 if hidden else 0, symbol)
         )
 
 
