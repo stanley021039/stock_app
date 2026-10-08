@@ -1,0 +1,79 @@
+# 🚨 2026-09-08: 以下績效數字已知有誤，勿直接採用。
+# 回測用 Yahoo 的 close，未還原股利；除息日的假跌幅污染 dev 訊號並低估報酬。
+# 改用 adj_close 後航運雙雄由勝轉敗 (1.76x/IR0.77 -> 0.76x/IR-0.47)，其餘五對
+# 也全部下修；分段檢定顯示六對僅封測與被動元件在 2016-2021 樣本外站得住。
+# 詳見 LITE_MECHANISM_SPEC.md 開頭的警告。tiers/ma/band_weights 可用，
+# excess_pp / bh_ratio / ir / *_win_rate / sharpe / max_dd / n_trades / turnover
+# 這些欄位待重新 grid 後才填。
+#
+# 新制 (二級區間 + 部分退場) 正式參數 — 回測區間鎖定 2021-10-12 ~ 2026-07-31
+# 所有數字皆已扣交易成本 (手續費 0.1425%x0.2 買賣各一次 + 證交稅 0.3% 賣出一次)
+# 產生腳本: scratchpad/final_newmech_0731.py
+
+# ---- PAIR_PARAMS (新制, 含成本) ----
+    "dram": {
+        "label": "記憶體雙雄", "symA": "2408.TW", "symB": "2344.TW",
+        "nameA": "南亞科", "nameB": "華邦電", "ma": 60,
+        "tiers": [0.04, 0.07], "band_weights": [0.50, 0.75, 1.00],
+        "excess_pp": 611.3, "bh_ratio": 2.10, "ir": 1.20,
+        "end_win_rate": 95.9, "one_year_win_rate": 96.6,
+        "sharpe": 1.27, "max_dd": -63.1,
+        "n_trades": 142, "turnover": 147.8,
+        "backtest_start": "2021-10-12", "backtest_end": "2026-07-31",
+        "costs_included": True,
+    },
+    "tw_ossat": {
+        "label": "封測雙雄", "symA": "3711.TW", "symB": "6239.TW",
+        "nameA": "日月光投控", "nameB": "力成", "ma": 60,
+        "tiers": [0.1, 0.175], "band_weights": [0.50, 0.75, 1.00],
+        "excess_pp": 102.7, "bh_ratio": 1.25, "ir": 0.41,
+        "end_win_rate": 84.5, "one_year_win_rate": 91.1,
+        "sharpe": 1.16, "max_dd": -46.7,
+        "n_trades": 49, "turnover": 40.9,
+        "backtest_start": "2021-10-12", "backtest_end": "2026-07-31",
+        "costs_included": True,
+    },
+    "tw_passive": {
+        "label": "被動元件雙雄", "symA": "2327.TW", "symB": "2492.TW",
+        "nameA": "國巨", "nameB": "華新科", "ma": 60,
+        "tiers": [0.04, 0.07], "band_weights": [0.50, 0.75, 1.00],
+        "excess_pp": 75.9, "bh_ratio": 1.25, "ir": 0.40,
+        "end_win_rate": 98.4, "one_year_win_rate": 76.3,
+        "sharpe": 0.86, "max_dd": -64.0,
+        "n_trades": 135, "turnover": 69.8,
+        "backtest_start": "2021-10-12", "backtest_end": "2026-07-31",
+        "costs_included": True,
+    },
+    "tw_power": {
+        "label": "功率元件雙雄", "symA": "2481.TW", "symB": "8261.TW",
+        "nameA": "強茂", "nameB": "富鼎", "ma": 60,
+        "tiers": [0.1, 0.175], "band_weights": [0.50, 0.75, 1.00],
+        "excess_pp": 73.8, "bh_ratio": 1.47, "ir": 0.63,
+        "end_win_rate": 98.1, "one_year_win_rate": 77.6,
+        "sharpe": 0.64, "max_dd": -55.3,
+        "n_trades": 59, "turnover": 23.1,
+        "backtest_start": "2021-10-12", "backtest_end": "2026-07-31",
+        "costs_included": True,
+    },
+    "aiserver": {
+        "label": "AI伺服器雙雄", "symA": "3231.TW", "symB": "6669.TW",
+        "nameA": "緯創", "nameB": "緯穎", "ma": 90,
+        "tiers": [0.06, 0.105], "band_weights": [0.50, 0.75, 1.00],
+        "excess_pp": 396.7, "bh_ratio": 1.63, "ir": 0.58,
+        "end_win_rate": 99.8, "one_year_win_rate": 60.6,
+        "sharpe": 1.35, "max_dd": -35.9,
+        "n_trades": 112, "turnover": 123.5,
+        "backtest_start": "2021-10-12", "backtest_end": "2026-07-31",
+        "costs_included": True,
+    },
+    "shipping": {
+        "label": "航運雙雄", "symA": "2603.TW", "symB": "2609.TW",
+        "nameA": "長榮", "nameB": "陽明", "ma": 90,
+        "tiers": [0.04, 0.07], "band_weights": [0.50, 0.75, 1.00],
+        "excess_pp": 56.3, "bh_ratio": 1.76, "ir": 0.77,
+        "end_win_rate": 91.5, "one_year_win_rate": 81.5,
+        "sharpe": 0.34, "max_dd": -54.6,
+        "n_trades": 66, "turnover": 24.7,
+        "backtest_start": "2021-10-12", "backtest_end": "2026-07-31",
+        "costs_included": True,
+    },

@@ -1,0 +1,150 @@
+:root {
+  --bg: #0e1117;
+  --panel: #161b22;
+  --panel-2: #1c2230;
+  --border: #2a3140;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #2f81f7;
+  --up: #26a69a;
+  --down: #ef5350;
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.app-header h1 { font-size: 18px; margin: 0; }
+.app-header .brand { display: flex; align-items: center; gap: 10px; }
+
+.container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0 14px;
+}
+.section-title h2 { font-size: 15px; color: var(--muted); font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Index cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color .15s, transform .05s;
+}
+.card:hover { border-color: var(--accent); }
+.card:active { transform: scale(0.995); }
+.card .name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.card .sym { font-size: 12px; color: var(--muted); }
+.card .price { font-size: 24px; font-weight: 600; }
+.card .chg { font-size: 14px; font-weight: 600; margin-top: 2px; }
+
+.up { color: var(--up); }
+.down { color: var(--down); }
+.flat { color: var(--muted); }
+
+/* Controls */
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button, .btn {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .5; cursor: default; }
+
+input, select {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+/* Symbol table */
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--panel-2); }
+.badge { font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted); }
+
+/* Stock page */
+.stock-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.stock-head .big { font-size: 30px; font-weight: 700; }
+.stock-head .sub { color: var(--muted); }
+.chart-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 14px; }
+.meta { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.toast { padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+.toast.ok { background: rgba(38,166,154,.15); color: var(--up); }
+.toast.err { background: rgba(239,83,80,.15); color: var(--down); }
+
+/* Editor panel */
+.editor { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.checkrow { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+.spinner { color: var(--muted); font-size: 13px; }
+
+/* Hover-tooltip info icon */
+.info-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--panel-2); border: 1px solid var(--border);
+  color: var(--muted); font-size: 12px; font-weight: 700; font-style: italic;
+  cursor: default; position: relative;
+}
+.info-icon .info-tooltip { display: none; }
+.info-icon:hover .info-tooltip { display: block; }
+.info-tooltip {
+  position: absolute; top: 22px; left: 0; z-index: 20;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font-size: 12px; color: var(--text); white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5); text-align: left; font-weight: 400; font-style: normal;
+  line-height: 1.6;
+}
+/* Last row: open upward instead of downward, so the tooltip doesn't run
+   past the bottom of the (vertically-clipping) table scroll container. */
+tbody tr:last-child .info-tooltip { top: auto; bottom: 22px; }
+
+/* Instant (no-delay) hover tooltips for the threshold-bar tick marks --
+   plain CSS show/hide via a wide invisible hit-line, instead of the
+   browser's native SVG <title> (slow to appear, narrow hit area). */
+.tick-tip { display: none; }
+.tick-group:hover .tick-tip { display: block; }
+.tick-tip-inner {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 30;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 8px; font-size: 11px; color: var(--text); white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5); line-height: 1.5;
+}

@@ -1,0 +1,24 @@
+.env
+
+__pycache__/
+*.pyc
+
+node_modules/
+
+backend/stock.db
+backend/stock.db-*
+
+# Runtime logs. Patterns are globs on purpose: the services write
+# timestamped names (quote-service-20260828T065813.854.log), which a plain
+# "quote-service.log" entry does not match. Archived quote-service logs
+# live under logs/quote-service/ (see scripts/rotate_quote_logs.py) --
+# *.log already covers anything in there too, this is just explicit.
+*.log
+/logs/
+
+# Local SQLite databases (stock.db, ticks.db, ...) -- runtime data, not source.
+*.db
+*.db-*
+
+# Machine-specific paths (python env etc.) -- see env.local.bat.example.
+env.local.bat
